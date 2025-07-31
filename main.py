@@ -72,28 +72,70 @@ def get_product_info(element):
     return product
 
 def save_products_to_csv(products):
-    with open(filename, 'w') as file:
-        fieldnames = ['name', 'price', 'price_per_unit', 'image_url', 'product_url']
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(products)
+    try:
+        products_old = []
+        with open(filename, 'r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                products_old.append(row)
+        
+        products_old.extend(products)
+
+        if products_old:
+            with open(filename, 'w') as file:
+                fieldnames = ['name', 'price', 'price_per_unit', 'image_url', 'product_url']
+                writer = csv.DictWriter(file, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(products_old)
+        else:
+            print('nothing new to write')
+
+    except Exception as e:
+        print(e)
+        print('creating new csv...')
+        with open(filename, 'w') as file:
+            fieldnames = ['name', 'price', 'price_per_unit', 'image_url', 'product_url']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(products)
 
 def main():
+    page = 1
     search = 'miel'
 
     driver = initialize_selenium()
     land_main_page(driver)
     search_product(driver, search)
-    time.sleep(5)
-    elements = get_all_elements_in_page(driver)
-    products = []
-    for element in elements:
-        product = get_product_info(element)
-        products.append(product)
+
+
+    while True:
+        print('page:', page)
+        time.sleep(5)
+        elements = get_all_elements_in_page(driver)
+        products_new = []
+        for element in elements:
+            product = get_product_info(element)
+            products_new.append(product)
+
+        save_products_to_csv(products_new)
+
+        try:
+            next_btn = driver.find_element(By.XPATH, '//a[contains(@class,"s-pagination-next") and not(contains(@aria-disabled,"true"))]')
+            next_btn.click()
+            page += 1
+        except:
+            print("No more pages. Done.")
+            break
 
     driver.quit()
 
-    save_products_to_csv(products)
-
 if __name__ == '__main__':
     main()
+    # products_old = []
+    # with open(filename, 'r') as file:
+    #     reader = csv.DictReader(file)
+    #     for row in reader:
+    #         products_old.append(row)
+
+    # #products_old.extend([])
+    # print(len(products_old))
