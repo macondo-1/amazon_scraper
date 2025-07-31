@@ -51,18 +51,32 @@ def get_product_info(element):
             
     for x in elements_per_product:
         if '/' in x:
+            x = x[:-1]
             product['price_per_unit'] = x
             break
     
+    try:
+        img = element.find_element(By.XPATH, './/img[contains(@class, "s-image")]')
+        img_url = img.get_attribute('src')
+        product['image_url'] = img_url
+    except:
+        print('no image url found')
+
+    try:
+        product_url = element.get_attribute("data-asin")
+        product_url =  'https://www.amazon.com.mx/dp/' + product_url
+        product['product_url'] = product_url
+    except:
+        print('no product url found')
+
     return product
 
 def save_products_to_csv(products):
     with open(filename, 'w') as file:
-        fieldnames = products[0].keys()
+        fieldnames = ['name', 'price', 'price_per_unit', 'image_url', 'product_url']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(products)
-
 
 def main():
     search = 'miel'
